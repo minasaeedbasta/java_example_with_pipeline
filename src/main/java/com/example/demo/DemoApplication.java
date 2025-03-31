@@ -2,22 +2,22 @@ package com.example.demo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Main application entry point.
+ */
 @SpringBootApplication
-public class DemoApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
+public final class DemoApplication {
+    private DemoApplication() {
+        // Private constructor to prevent instantiation
     }
-}
 
-@RestController
-@RequestMapping("/api")
-class HelloController {
-    @GetMapping("/hello")
-    public String sayHello() {
-        return "Hello, DevOps!";
+    /**
+     * Runs the Spring Boot application.
+     *
+     * @param args Command-line arguments.
+     */
+    public static void main(final String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
     }
 }

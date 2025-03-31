@@ -1,12 +1,13 @@
 name: Java CI/CD Pipeline
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build:
@@ -19,8 +20,8 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
       - name: Build with Maven
         run: mvn clean package
@@ -41,7 +42,27 @@ jobs:
         run: docker build -t simple-java-app .
 
       - name: Push Docker Image
-        run: docker tag simple-java-app $DOCKER_USERNAME/simple-java-app:latest && docker push $DOCKER_USERNAME/simple-java-app:latest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: docker tag simple-java-app $DOCKER_USERNAME/simple-java-app:build-${{ github.run_number }} && docker push $DOCKER_USERNAME/simple-java-app:build-${{ github.run_number }}
 
-      - name: Deploy (Example Step)
-        run: echo "Deploying application..."
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Set up kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          kubectl cluster-info
+        
+
+      - name: Deploy to k8s
+        run: |
+          kubectl apply -f k8s/deployment.yaml || kubectl create -f k8s/deployment.yaml
+          kubectl set image deployment/java-app java-app=${{ secrets.DOCKER_USERNAME }}/simple-java-app:build-${{ github.run_number }} --record
+          kubectl rollout status deployment/java-app || kubectl rollout history deployment/java-app

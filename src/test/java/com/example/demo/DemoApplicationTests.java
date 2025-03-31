@@ -14,4 +14,11 @@ class DemoApplicationTests {
         String response = controller.sayHello();
         assertThat(response).isEqualTo("Hello, DevOps!");
     }
+
+    @Test
+    void testHiMessage() {
+        HelloController controller = new HelloController();
+        String response = controller.sayHi();
+        assertThat(response).isEqualTo("Hi, DevOps!");
+    }
 }
