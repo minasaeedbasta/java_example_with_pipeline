@@ -45,8 +45,8 @@ public final class HelloController {
      *
      * @return Greeting message.
      */
-    @GetMapping("/test")
-    public String sayTest() {
-        return "TEST TEST";
+    @GetMapping("/byebye")
+    public String sayByeBye() {
+        return "Buy Buy";
     }
 }
