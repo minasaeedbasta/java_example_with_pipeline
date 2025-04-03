@@ -29,6 +29,7 @@ public final class HelloController {
     public String sayHi() {
         return "Hi, DevOps!";
     }
+
     /**
      * Returns another greeting message.
      *
@@ -37,5 +38,15 @@ public final class HelloController {
     @GetMapping("/usa")
     public String sayHiToUSA() {
         return "Uncle sam";
+    }
+
+    /**
+     * Returns another greeting message.
+     *
+     * @return Greeting message.
+     */
+    @GetMapping("/test")
+    public String sayTest() {
+        return "TEST TEST";
     }
 }
