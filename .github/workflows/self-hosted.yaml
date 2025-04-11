@@ -1,0 +1,71 @@
+name: Java CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Run Tests
+        run: mvn test
+
+      - name: sleep for a while
+        run: sleep 60
+
+      - name: Lint Code
+        run: mvn checkstyle:check
+
+      - name: Login to DockerHub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      - name: Build Docker Image
+        run: docker build -t simple-java-app .
+
+      - name: Push Docker Image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: docker tag simple-java-app $DOCKER_USERNAME/simple-java-app:build-${{ github.run_number }} && docker push $DOCKER_USERNAME/simple-java-app:build-${{ github.run_number }}
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Set up kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          kubectl cluster-info
+        
+
+      - name: Deploy to k8s
+        run: |
+          kubectl apply -f k8s/deployment.yaml || kubectl create -f k8s/deployment.yaml
+          kubectl set image deployment/java-app java-app=${{ secrets.DOCKER_USERNAME }}/simple-java-app:build-${{ github.run_number }} --record
+          kubectl rollout status deployment/java-app || kubectl rollout history deployment/java-app
